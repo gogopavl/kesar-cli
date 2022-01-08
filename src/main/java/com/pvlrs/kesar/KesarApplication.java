@@ -1,21 +1,25 @@
 package com.pvlrs.kesar;
 
 import com.pvlrs.kesar.command.KesarCommand;
+import com.pvlrs.kesar.exception.handler.KesarCliErrorHandler;
+import com.pvlrs.kesar.exception.handler.KesarCliUserInputErrorHandler;
+import com.pvlrs.kesar.exception.mapper.KesarCliExitCodeExceptionMapper;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import picocli.CommandLine;
+import picocli.CommandLine.IFactory;
 
 @SpringBootApplication
 public class KesarApplication implements CommandLineRunner, ExitCodeGenerator {
 
-	private final CommandLine.IFactory factory;
+	private final IFactory factory;
 	private final KesarCommand kesarCommand;
 
 	private int exitCode;
 
-	public KesarApplication(CommandLine.IFactory factory, KesarCommand kesarCommand) {
+	public KesarApplication(IFactory factory, KesarCommand kesarCommand) {
 		this.factory = factory;
 		this.kesarCommand = kesarCommand;
 	}
@@ -23,9 +27,9 @@ public class KesarApplication implements CommandLineRunner, ExitCodeGenerator {
 	@Override
 	public void run(String[] args) {
 		this.exitCode = new CommandLine(kesarCommand, factory)
-//				.setParameterExceptionHandler(new CliUserInputErrorHandler())
-//				.setExecutionExceptionHandler(new CliErrorHandler())
-//				.setExitCodeExceptionMapper(new CliExitCodeExceptionMapper())
+				.setParameterExceptionHandler(new KesarCliUserInputErrorHandler())
+				.setExecutionExceptionHandler(new KesarCliErrorHandler())
+				.setExitCodeExceptionMapper(new KesarCliExitCodeExceptionMapper())
 				.execute(args);
 	}
 

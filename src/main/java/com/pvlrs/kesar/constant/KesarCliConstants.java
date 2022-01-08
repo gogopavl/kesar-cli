@@ -1,4 +1,4 @@
-package com.pvlrs.kesar.constants;
+package com.pvlrs.kesar.constant;
 
 import lombok.experimental.UtilityClass;
 

@@ -9,7 +9,8 @@ import picocli.CommandLine.Spec;
 import java.io.PrintWriter;
 import java.util.concurrent.Callable;
 
-import static com.pvlrs.kesar.constants.KesarCliConstants.KESAR_CLI_VERSION;
+import static com.pvlrs.kesar.constant.KesarCliConstants.KESAR_CLI_VERSION;
+import static com.pvlrs.kesar.constant.KesarCliExitCodes.SUCCESS_CODE;
 
 @Data
 @Component
@@ -28,6 +29,6 @@ public class KesarCommand implements Callable<Integer> {
     public Integer call() {
         PrintWriter out = this.spec.commandLine().getOut();
         this.spec.commandLine().usage(out);
-        return 0; // todo: move to class
+        return SUCCESS_CODE;
     }
 }

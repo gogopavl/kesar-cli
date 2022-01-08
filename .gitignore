@@ -21,3 +21,6 @@ target/
 scripts/*.csv
 *.jsonl
 *.gz
+
+# Properties
+src/main/resources/application.properties

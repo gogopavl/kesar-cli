@@ -1,17 +1,20 @@
 package com.pvlrs.kesar.command;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.pvlrs.kesar.command.arguments.InputArguments;
+import com.pvlrs.kesar.crypto.EncryptionService;
+import com.pvlrs.kesar.utility.PasswordReaderService;
+import lombok.Data;
 import org.springframework.stereotype.Component;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.util.concurrent.Callable;
 
-import static com.pvlrs.kesar.constants.KesarCliConstants.KESAR_CLI_VERSION;
+import static com.pvlrs.kesar.constant.KesarCliConstants.KESAR_CLI_VERSION;
+import static com.pvlrs.kesar.constant.KesarCliExitCodes.SUCCESS_CODE;
 
-@Setter
-@Getter
+@Data
 @Component
 @Command(
         name = "encrypt",
@@ -21,36 +24,54 @@ import static com.pvlrs.kesar.constants.KesarCliConstants.KESAR_CLI_VERSION;
 )
 public class EncryptSubCommand implements Callable<Integer> {
 
-    @Option(
-            names = {"-r", "--raw-key"},
-            description = "Raw private key value to encrypt with.",
-            paramLabel = "<key>"
-    )
-    private String key;
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    private MutuallyExclusiveArguments argumentGroup;
+
+    @Data
+    private static class MutuallyExclusiveArguments {
+
+        @Option(
+                names = {"-d", "--data"},
+                description = "Raw data to be encrypted",
+                paramLabel = "<data>",
+                required = true
+        )
+        private String data;
+
+        @Option(
+                names = {"-f", "--file"},
+                description = "Path to file to be encrypted",
+                paramLabel = "<path-to-file>",
+                required = true
+        )
+        private String pathToFile;
+    }
 
     @Option(
-            names = {"-k", "--key"},
-            description = "Path to file holding the private key to encrypt with.",
-            paramLabel = "<path-to-key>"
+            names = {"-p", "--password"},
+            description = "Password used to encrypt data with",
+            paramLabel = "<password>",
+            arity = "0..1",
+            interactive = true
     )
-    private String pathToKey;
+    private char[] passwordCharacters;
 
-    @Option(
-            names = {"-d", "--data"},
-            description = "Raw data to be encrypted.",
-            paramLabel = "<data>"
-    )
-    private String rawData;
+    private final PasswordReaderService passwordReaderService;
+    private final EncryptionService encryptionService;
 
-    @Option(
-            names = {"-f", "--file"},
-            description = "Path to file to be encrypted.",
-            paramLabel = "<path-to-file>"
-    )
-    private String pathToFile;
+    public EncryptSubCommand(PasswordReaderService passwordReaderService, EncryptionService encryptionService) {
+        this.passwordReaderService = passwordReaderService;
+        this.encryptionService = encryptionService;
+    }
 
     public Integer call() {
-        System.out.println("Encrypt sub-command - raw data: " + rawData);
-        return 0;
+        String password = passwordReaderService.parsePasswordIfAbsentOrElseGet(passwordCharacters);
+        InputArguments inputArguments = InputArguments.builder()
+                .password(password)
+                .data(argumentGroup.data)
+                .pathToFile(argumentGroup.pathToFile).build();
+        String encryptedData = encryptionService.encryptData(inputArguments);
+        System.out.println("Encrypted data: " + encryptedData);
+        return SUCCESS_CODE;
     }
 }

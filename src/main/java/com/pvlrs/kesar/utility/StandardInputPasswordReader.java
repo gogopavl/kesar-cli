@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.io.Console;
 import java.util.Scanner;
 
-import static com.pvlrs.kesar.constant.UserMessages.PASSWORD_PROMPT;
+import static com.pvlrs.kesar.constant.ConsoleMessages.PASSWORD_PROMPT;
 
 /**
  * <p> Ideally, the password should be read via {@link Console#readPassword(java.lang.String,

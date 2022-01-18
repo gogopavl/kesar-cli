@@ -16,7 +16,7 @@ public class InputArguments {
     private String data;
     private String pathToFile;
 
-    public boolean isFileEncryption() {
+    public boolean isFileEncryptionOrDecryption() {
         return nonNull(pathToFile) && isNull(data);
     }
 }

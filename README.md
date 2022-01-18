@@ -7,3 +7,8 @@ Kesar (Καίσαρ) is a CLI tool that offers common &amp; simple encryption/de
 `./mvnw clean package -Pnative -DskipTests`
 
 > **_Requirements:_** GraalVM `V21.3.0.r11` & an installation of native image (`gu install native-image`).
+
+# Installation
+
+- UNIX-like platforms: `sudo ln -s "$PWD"/kesar /usr/local/bin/kesar`
+- Windows: ...

@@ -1,6 +1,7 @@
 package com.pvlrs.kesar.crypto;
 
 import com.pvlrs.kesar.configuration.CryptoConfiguration;
+import com.pvlrs.kesar.enums.CryptoServiceQualifier;
 import com.pvlrs.kesar.exception.AesDecryptionException;
 import com.pvlrs.kesar.exception.AesEncryptionException;
 import org.springframework.stereotype.Service;
@@ -11,11 +12,12 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
-import java.util.Base64;
 
 import static com.pvlrs.kesar.constant.CryptoConstants.AES;
 import static com.pvlrs.kesar.constant.CryptoConstants.AES_KEY_SIZE_IN_BITS;
@@ -26,21 +28,28 @@ import static com.pvlrs.kesar.constant.CryptoConstants.KEY_DERIVATION_ALGORITHM;
 import static com.pvlrs.kesar.constant.CryptoConstants.PBE_ITERATION_COUNT;
 import static com.pvlrs.kesar.constant.ErrorMessages.DECRYPTION_ERROR_MESSAGE;
 import static com.pvlrs.kesar.constant.ErrorMessages.ENCRYPTION_ERROR_MESSAGE;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Arrays.copyOfRange;
+import static com.pvlrs.kesar.constant.FileConstants.BUFFER_SIZE;
+import static com.pvlrs.kesar.constant.FileConstants.END_OF_FILE_CODE;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
+// todo: refactor most of the stuff in here
 @Service
-public class AesCryptoService implements PasswordBasedCryptoService {
+public class AesFileCryptoService implements PasswordBasedCryptoService {
 
     private final CryptoConfiguration cryptoConfiguration;
 
-    public AesCryptoService(CryptoConfiguration cryptoConfiguration) {
+    public AesFileCryptoService(CryptoConfiguration cryptoConfiguration) {
         this.cryptoConfiguration = cryptoConfiguration;
     }
 
-    public String encrypt(String plaintextInput, String password) {
-        if (isNull(plaintextInput)) {
+    @Override
+    public CryptoServiceQualifier getQualifier() {
+        return CryptoServiceQualifier.AES_FILE_CRYPTO_SERVICE;
+    }
+
+    public String encrypt(String filePath, String password) {
+        if (isNull(filePath)) {
             return null;
         }
 
@@ -51,13 +60,27 @@ public class AesCryptoService implements PasswordBasedCryptoService {
             GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_SIZE_IN_BITS, iv);
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, spec);
 
-            byte[] encryptedBytes = cipher.doFinal(plaintextInput.getBytes());
-            byte[] result = new byte[GCM_IV_SIZE_IN_BYTES + encryptedBytes.length];
+            String outputFileName = filePath + ".enc";
+            byte[] buffer = new byte[BUFFER_SIZE];
 
-            System.arraycopy(iv, 0, result, 0, GCM_IV_SIZE_IN_BYTES);
-            System.arraycopy(encryptedBytes, 0, result, GCM_IV_SIZE_IN_BYTES, encryptedBytes.length);
+            try (FileInputStream inputStream = new FileInputStream(filePath);
+                 FileOutputStream outputStream = new FileOutputStream(outputFileName)) {
 
-            return base64Encode(result);
+                outputStream.write(iv);
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != END_OF_FILE_CODE) {
+                    byte[] output = cipher.update(buffer, 0, bytesRead);
+                    if (nonNull(output)) {
+                        outputStream.write(output);
+                    }
+                }
+                byte[] outputBytes = cipher.doFinal();
+                if (nonNull(outputBytes)) {
+                    outputStream.write(outputBytes);
+                }
+            }
+
+            return outputFileName;
         } catch (Exception exception) {
             // todo: don't catch generic exception, but specific sub-types & provide appropriate messages & error codes
             throw new AesEncryptionException(ENCRYPTION_ERROR_MESSAGE);
@@ -80,35 +103,42 @@ public class AesCryptoService implements PasswordBasedCryptoService {
         return iv;
     }
 
-    private static String base64Encode(byte[] input) {
-        return Base64.getEncoder().encodeToString(input);
-    }
-
-    public String decrypt(String encryptedInput, String password) {
-        if (isNull(encryptedInput)) {
+    public String decrypt(String encryptedFilePath, String password) {
+        if (isNull(encryptedFilePath)) {
             return null;
         }
 
         try {
-            byte[] ivAndEncryptedData = base64Decode(encryptedInput);
-            byte[] iv = copyOfRange(ivAndEncryptedData, 0, GCM_IV_SIZE_IN_BYTES);
-            byte[] encryptedData = copyOfRange(ivAndEncryptedData, GCM_IV_SIZE_IN_BYTES, ivAndEncryptedData.length);
+            String outputFileName = encryptedFilePath + ".dec";
 
-            Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
-            SecretKey secretKey = deriveKeyFromPassword(password);
-            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_SIZE_IN_BITS, iv);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+            try (FileInputStream fileInputStream = new FileInputStream(encryptedFilePath);
+                 FileOutputStream fileOutputStream = new FileOutputStream(outputFileName)) {
+                byte[] fileIv = new byte[GCM_IV_SIZE_IN_BYTES];
+                fileInputStream.read(fileIv);
 
-            byte[] decrypted = cipher.doFinal(encryptedData);
+                Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
+                SecretKey secretKey = deriveKeyFromPassword(password);
+                GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_SIZE_IN_BITS, fileIv);
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
 
-            return new String(decrypted, UTF_8);
+                byte[] buffer = new byte[BUFFER_SIZE];
+                int bytesRead;
+                while ((bytesRead = fileInputStream.read(buffer)) != END_OF_FILE_CODE) {
+                    byte[] output = cipher.update(buffer, 0, bytesRead);
+                    if (nonNull(output)) {
+                        fileOutputStream.write(output);
+                    }
+                }
+                byte[] output = cipher.doFinal();
+                if (nonNull(output)) {
+                    fileOutputStream.write(output);
+                }
+            }
+
+            return outputFileName;
         } catch (Exception exception) {
             // todo: don't catch generic exception, but specific sub-types & provide appropriate messages & error codes
             throw new AesDecryptionException(DECRYPTION_ERROR_MESSAGE);
         }
-    }
-
-    private static byte[] base64Decode(String input) {
-        return Base64.getDecoder().decode(input.getBytes(UTF_8));
     }
 }

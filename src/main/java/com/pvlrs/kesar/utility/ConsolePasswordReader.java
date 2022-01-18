@@ -4,7 +4,7 @@ import com.pvlrs.kesar.condition.ConsolePasswordReaderCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import static com.pvlrs.kesar.constant.UserMessages.PASSWORD_PROMPT;
+import static com.pvlrs.kesar.constant.ConsoleMessages.PASSWORD_PROMPT;
 
 @Component
 @Conditional(ConsolePasswordReaderCondition.class)

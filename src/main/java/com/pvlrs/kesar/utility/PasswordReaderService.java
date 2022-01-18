@@ -14,9 +14,7 @@ public class PasswordReaderService {
     }
 
     public String parsePasswordIfAbsentOrElseGet(char[] passwordCharacters) {
-        if (isNull(passwordCharacters)) {
-            return passwordReader.readPassword();
-        }
-        return new String(passwordCharacters);
+        return isNull(passwordCharacters) ?
+                passwordReader.readPassword() : new String(passwordCharacters);
     }
 }

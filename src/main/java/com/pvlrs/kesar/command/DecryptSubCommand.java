@@ -2,7 +2,7 @@ package com.pvlrs.kesar.command;
 
 import com.pvlrs.kesar.command.arguments.InputArguments;
 import com.pvlrs.kesar.crypto.DecryptionService;
-import com.pvlrs.kesar.utility.PasswordReaderService;
+import com.pvlrs.kesar.utility.PasswordService;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -59,11 +59,11 @@ public class DecryptSubCommand implements Callable<Integer> {
     )
     private char[] passwordCharacters;
 
-    private final PasswordReaderService passwordReaderService;
+    private final PasswordService passwordReaderService;
     private final DecryptionService decryptionService;
 
-    public DecryptSubCommand(PasswordReaderService passwordReaderService, DecryptionService decryptionService) {
-        this.passwordReaderService = passwordReaderService;
+    public DecryptSubCommand(PasswordService passwordService, DecryptionService decryptionService) {
+        this.passwordReaderService = passwordService;
         this.decryptionService = decryptionService;
     }
 

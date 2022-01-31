@@ -2,7 +2,7 @@ package com.pvlrs.kesar.command;
 
 import com.pvlrs.kesar.command.arguments.InputArguments;
 import com.pvlrs.kesar.crypto.EncryptionService;
-import com.pvlrs.kesar.utility.PasswordReaderService;
+import com.pvlrs.kesar.utility.PasswordService;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 import picocli.CommandLine.ArgGroup;
@@ -56,11 +56,11 @@ public class EncryptSubCommand implements Callable<Integer> {
     )
     private char[] passwordCharacters;
 
-    private final PasswordReaderService passwordReaderService;
+    private final PasswordService passwordReaderService;
     private final EncryptionService encryptionService;
 
-    public EncryptSubCommand(PasswordReaderService passwordReaderService, EncryptionService encryptionService) {
-        this.passwordReaderService = passwordReaderService;
+    public EncryptSubCommand(PasswordService passwordService, EncryptionService encryptionService) {
+        this.passwordReaderService = passwordService;
         this.encryptionService = encryptionService;
     }
 

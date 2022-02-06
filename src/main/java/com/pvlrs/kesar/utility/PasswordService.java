@@ -15,7 +15,9 @@ import static com.pvlrs.kesar.constant.CryptoConstants.AES;
 import static com.pvlrs.kesar.constant.CryptoConstants.AES_KEY_SIZE_IN_BITS;
 import static com.pvlrs.kesar.constant.CryptoConstants.KEY_DERIVATION_ALGORITHM;
 import static com.pvlrs.kesar.constant.CryptoConstants.PBE_ITERATION_COUNT;
+import static com.pvlrs.kesar.constant.KesarCliConstants.KESAR_CLI_ENV_PASSWORD;
 import static java.util.Objects.isNull;
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
 @Service
 public class PasswordService {
@@ -29,14 +31,17 @@ public class PasswordService {
     }
 
     public String parsePasswordIfAbsentOrElseGet(char[] passwordCharacters) {
-        /* todo: an explicit password option should be #1 in terms of priority, if not given & env variable is not set
-            then only prompt for password */
-//        String environmentPassword = System.getenv(KESAR_CLI_ENV_PASSWORD);
-//        if (isNotBlank(environmentPassword)) {
-//            return environmentPassword;
-//        }
         return isNull(passwordCharacters) ?
-                passwordReader.readPassword() : new String(passwordCharacters);
+                getPassword() : new String(passwordCharacters);
+    }
+
+    private String getPassword() {
+        String environmentPassword = System.getenv(KESAR_CLI_ENV_PASSWORD);
+        if (isNotBlank(environmentPassword)) {
+            return environmentPassword;
+        } else {
+            return passwordReader.readPassword();
+        }
     }
 
     public SecretKey deriveKeyFromPassword(String password) throws NoSuchAlgorithmException, InvalidKeySpecException {
